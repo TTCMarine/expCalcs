@@ -1,0 +1,6 @@
+Expedition-Python
+pydantic
+pyside6
+numpy
+pandas
+pyinstaller
