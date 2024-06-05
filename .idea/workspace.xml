@@ -4,22 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="311e1eaa-8e9d-4879-88f8-58963d11ad68" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/expCalcs.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ExpCalcs/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ExpCalcs/calculator.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ExpCalcs/licensing.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ExpCalcs/models.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/config.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/expcalcs.ico" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+    <list default="true" id="311e1eaa-8e9d-4879-88f8-58963d11ad68" name="Changes" comment="initial commit">
+      <change afterPath="$PROJECT_DIR$/expcalcs.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -67,6 +55,7 @@
       <recent name="C:\Users\tom\source\repos\expCalcs" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\tom\source\repos\expCalcs" />
       <recent name="C:\Users\tom\source\repos\expCalcs\ExpCalcs" />
     </key>
   </component>
@@ -122,12 +111,25 @@
       <workItem from="1713874876641" duration="1641000" />
       <workItem from="1713877845854" duration="11329000" />
       <workItem from="1715700311797" duration="6156000" />
-      <workItem from="1717593719145" duration="1103000" />
+      <workItem from="1717593719145" duration="3535000" />
     </task>
+    <task id="LOCAL-00001" summary="initial commit">
+      <option name="closed" value="true" />
+      <created>1717596206520</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1717596206521</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="initial commit" />
+    <option name="LAST_COMMIT_MESSAGE" value="initial commit" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/expCalcs$app.coverage" NAME="app Coverage Results" MODIFIED="1715721345115" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

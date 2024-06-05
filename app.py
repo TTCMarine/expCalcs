@@ -180,7 +180,7 @@ if __name__ == "__main__":
 
     app = QtWidgets.QApplication([])
     # set icon to be expcalcs.ico
-    app.setWindowIcon(QtGui.QIcon("expcalcs.ico"))
+    app.setWindowIcon(QtGui.QIcon("expcalcs.png"))
 
     main_window = MainWindow()
     main_window.show()
