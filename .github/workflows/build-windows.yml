@@ -1,4 +1,4 @@
-name: Build Windows Executable
+name: Build Windows Executable and Release
 
 on:
   push:
@@ -16,20 +16,48 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'  # Match your local version
+          python-version: '3.12'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller
-          pip install -r requirements.txt  # Optional
+          if (Test-Path requirements.txt) { pip install -r requirements.txt }
+
+      - name: Get next version tag
+        id: get_version
+        run: |
+          $tags = git tag --sort=-v:refname | Where-Object { $_ -match '^v\d+\.\d+\.\d+$' }
+          if ($tags.Length -eq 0) {
+            $next = "v0.1.0"
+          } else {
+            $latest = $tags[0]
+            $parts = $latest.TrimStart("v").Split(".")
+            $major = [int]$parts[0]
+            $minor = [int]$parts[1]
+            $patch = [int]$parts[2] + 1
+            $next = "v$major.$minor.$patch"
+          }
+          echo "next_version=$next" >> $env:GITHUB_ENV
+          echo "tag_name=$next" >> $env:GITHUB_OUTPUT
 
       - name: Build with PyInstaller
         run: |
           pyinstaller --onefile --noconsole --icon=expcalcs.ico --name expcalcs app.py
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Bundle executable and config
+        run: |
+          mkdir bundle
+          copy dist\expcalcs.exe bundle\
+          copy config.json bundle\
+          copy expcalcs.ico bundle\
+          Compress-Archive -Path bundle\* -DestinationPath expcalcs_bundle.zip
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: expcalcs.exe
-          path: dist/expcalcs.exe
+          tag_name: ${{ steps.get_version.outputs.tag_name }}
+          name: Release ${{ steps.get_version.outputs.tag_name }}
+          files: expcalcs_bundle.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
