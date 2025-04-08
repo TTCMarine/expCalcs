@@ -60,4 +60,4 @@ jobs:
           name: Release ${{ steps.get_version.outputs.tag_name }}
           files: expcalcs_bundle.zip
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
