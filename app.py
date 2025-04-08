@@ -26,7 +26,6 @@ class Column(IntEnum):
 
 class ExpCalcsWidget(QtWidgets.QWidget):
     load_default_config = QtCore.Signal()
-    licensed = QtCore.Signal(bool)
 
     COLUMN_LABELS = {
         Column.Name: "Config",
@@ -43,7 +42,6 @@ class ExpCalcsWidget(QtWidgets.QWidget):
         self.config = None
         self.expedition = None
         self.calculators: List[ExpCalcs.MathChannelCalculator] = []
-        self._licensed = False
 
         self.layout = QtWidgets.QVBoxLayout(self)
         self.config_tree = QtWidgets.QTreeWidget()
@@ -59,23 +57,14 @@ class ExpCalcsWidget(QtWidgets.QWidget):
 
         self.timer_10hz = QtCore.QTimer()
         self.timer_10hz.timeout.connect(self.update_10hz)
+        self.timer_10hz.start(100)
 
-        self.licensed.connect(self.run_calcs)
-
-    @QtCore.Slot()
-    def run_calcs(self):
-        if self._licensed:
-            self.timer_10hz.start(100)
 
     @QtCore.Slot()
     def on_load_default_config(self):
         if os.path.exists(DEFAULT_CONFIG_FILE):
             path = DEFAULT_CONFIG_FILE
             self.load_config(path)
-
-    def check_license(self):
-        self._licensed = ExpCalcs.licensing.check_license()
-        self.licensed.emit(self._licensed)
 
     def load_config_from_file(self, file_path: str) -> Optional[ExpCalcs.Config]:
         if os.path.exists(file_path):
@@ -149,29 +138,11 @@ class MainWindow(QtWidgets.QMainWindow):
         # set window size
         self.resize(800, 600)
 
-        self.exp_calcs.licensed.connect(self.on_licence_check)
-        self.exp_calcs.check_license()
-
-    @QtCore.Slot(bool)
-    def on_licence_check(self, is_licensed):
-        if is_licensed:
-            self.status_bar.showMessage("Licensed")
-        else:
-            client_id = ExpCalcs.get_client_id()
-            self.status_bar.addWidget(QtWidgets.QLabel("Client ID:"))
-            self.status_bar.addWidget(QtWidgets.QLineEdit(client_id, readOnly=True))
-            self.status_bar.addWidget(QtWidgets.QPushButton("Copy Client ID", clicked=self.on_copy_client_id))
-            QtCore.QTimer.singleShot(2000, self.show_license_check_failed_message)
-
     @QtCore.Slot()
     def on_copy_client_id(self):
         client_id = ExpCalcs.get_client_id()
         clipboard = QtWidgets.QApplication.clipboard()
         clipboard.setText(client_id)
-
-    @QtCore.Slot()
-    def show_license_check_failed_message(self):
-        QtWidgets.QMessageBox.critical(self, "License Check", "License check failed!")
 
 
 if __name__ == "__main__":

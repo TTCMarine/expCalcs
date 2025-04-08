@@ -84,6 +84,15 @@ class Calculator(ABC):
         self.functions['log1p'] = np.log1p
         self.functions['sign'] = np.sign
         self.functions['heaviside'] = np.heaviside
+        self.functions['power'] = np.power
+        self.functions['square'] = np.square
+        self.functions['cbrt'] = np.cbrt
+        self.functions['reciprocal'] = np.reciprocal
+        self.functions['negative'] = np.negative
+        self.functions['positive'] = np.positive
+        self.functions['signbit'] = np.signbit
+        self.functions['copysign'] = np.copysign
+
 
     def add_default_variables(self):
         """
