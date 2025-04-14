@@ -101,6 +101,7 @@ class Calculator(ABC):
         self.variables['pi'] = np.pi
         self.variables['e'] = np.e
 
+
     @abstractmethod
     def calculate(self) -> float:
         raise NotImplementedError("calculate method must be implemented in a subclass")

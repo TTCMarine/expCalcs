@@ -49,6 +49,10 @@ class MathChannelConfig(BaseModel):
         # convert the string to the enum
         return Var[self.output_expedition_var_enum_string]
 
+    @staticmethod
+    def channel_type() -> str:
+        return "Math Channel"
+
 
 class RollingMathChannelConfig(MathChannelConfig):
     """
@@ -61,6 +65,10 @@ class RollingMathChannelConfig(MathChannelConfig):
     @property
     def window_length_time_delta(self) -> timedelta:
         return pd.to_timedelta(self.window_length)
+
+    @staticmethod
+    def channel_type() -> str:
+        return "Rolling Math Channel"
 
 
 class Config(BaseModel):

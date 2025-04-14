@@ -1,51 +1,55 @@
 {
-  "expedition": {
-    "install_path": "C:\\Program Files\\Expedition\\Expedition"
-  },
-  "math_channels": [
-    {
-      "name": "VMG",
-      "inputs": [
+    "expedition": {
+        "install_path": "C:\\Program Files\\Expedition\\Expedition"
+    },
+    "boat": 0,
+    "math_channels": [
         {
-          "expedition_var_enum_string": "Bsp",
-          "local_var_name": "bsp"
+            "name": "VMG",
+            "output_expedition_var_enum_string": "User0",
+            "output_expedition_user_name": "CustomVMG",
+            "expression": "bsp * cos(radians(twa))",
+            "inputs": [
+                {
+                    "expedition_var_enum_string": "Bsp",
+                    "local_var_name": "bsp"
+                },
+                {
+                    "expedition_var_enum_string": "Twa",
+                    "local_var_name": "twa"
+                }
+            ],
+            "output_is_heading": false
+        }
+    ],
+    "rolling_math_channels": [
+        {
+            "name": "RollingAverageBsp",
+            "output_expedition_var_enum_string": "User1",
+            "output_expedition_user_name": "BspMean",
+            "expression": "mean(bsp)",
+            "inputs": [
+                {
+                    "expedition_var_enum_string": "Bsp",
+                    "local_var_name": "bsp"
+                }
+            ],
+            "output_is_heading": false,
+            "window_length": "10s"
         },
         {
-          "expedition_var_enum_string": "Twa",
-          "local_var_name": "twa"
+            "name": "RollingStdAwa",
+            "output_expedition_var_enum_string": "User2",
+            "output_expedition_user_name": "AwaStd",
+            "expression": "std(awa)",
+            "inputs": [
+                {
+                    "expedition_var_enum_string": "Awa",
+                    "local_var_name": "awa"
+                }
+            ],
+            "output_is_heading": false,
+            "window_length": "10s"
         }
-      ],
-      "expression": "bsp * cos(radians(twa))",
-      "output_expedition_var_enum_string": "User0",
-      "output_expedition_user_name": "CustomVMG"
-    }
-  ],
-  "rolling_math_channels": [
-    {
-      "name": "RollingAverageBsp",
-      "inputs": [
-        {
-          "expedition_var_enum_string": "Bsp",
-          "local_var_name": "bsp"
-        }
-      ],
-      "output_expedition_var_enum_string": "User1",
-      "output_expedition_user_name": "BspMean",
-      "window_length": "10s",
-      "expression": "mean(bsp)"
-    },
-    {
-      "name": "RollingStdAwa",
-      "inputs": [
-        {
-          "expedition_var_enum_string": "Awa",
-          "local_var_name": "awa"
-        }
-      ],
-      "output_expedition_var_enum_string": "User2",
-      "output_expedition_user_name": "AwaStd",
-      "window_length": "10s",
-      "expression": "std(awa)"
-    }
-  ]
+    ]
 }
