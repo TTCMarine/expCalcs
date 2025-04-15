@@ -2,7 +2,7 @@
 from PySide6 import QtWidgets
 from PySide6.QtCore import Qt, QStringListModel, Signal
 
-from ExpCalcs import InputVar, MathChannelConfig, RollingMathChannelConfig
+from ExpCalcs import InputVar, MathChannelConfig
 from Expedition import Var
 
 
@@ -88,7 +88,7 @@ class SelectInputsDialog(QtWidgets.QDialog):
         self.setWindowTitle("Edit Inputs")
         self.layout = QtWidgets.QVBoxLayout(self)
 
-        self.inputs = current_inputs or []
+        self.inputs = current_inputs if current_inputs else []
 
         self.input_list = QtWidgets.QListWidget()
         self.layout.addWidget(self.input_list)
@@ -109,6 +109,12 @@ class SelectInputsDialog(QtWidgets.QDialog):
         form_layout.addWidget(self.local_name_input)
         form_layout.addWidget(self.add_button)
         self.layout.addLayout(form_layout)
+
+        self.delete_button = QtWidgets.QPushButton("Delete Selected")
+        self.delete_button.clicked.connect(self.delete_selected_input)
+        self.layout.addWidget(self.delete_button)
+        self.delete_button.setEnabled(False)
+        self.input_list.itemSelectionChanged.connect(lambda: self.delete_button.setEnabled(bool(self.input_list.selectedItems())))
 
         self.selected_var = None
 
@@ -131,6 +137,14 @@ class SelectInputsDialog(QtWidgets.QDialog):
             self.input_list.addItem(f"{local_name} ← {var_name}")
             self.local_name_input.clear()
 
+    def delete_selected_input(self):
+        selected_items = self.input_list.selectedItems()
+        if selected_items:
+            for item in selected_items:
+                row = self.input_list.row(item)
+                del self.inputs[row]
+                self.input_list.takeItem(row)
+
     def get_inputs(self):
         return self.inputs
 
@@ -142,6 +156,7 @@ class MathChannelConfigDialog(QtWidgets.QDialog):
         self.dialog_layout = QtWidgets.QVBoxLayout(self)
         self.layout = QtWidgets.QVBoxLayout()
         self.dialog_layout.addLayout(self.layout)
+        self.setWindowTitle("Rolling Math Channel Configuration")
 
         # Name fields
         name_group = QtWidgets.QGroupBox("Name")
@@ -153,12 +168,12 @@ class MathChannelConfigDialog(QtWidgets.QDialog):
         name_layout.addWidget(self.name_input)
 
         # Inputs
-        inputs_group  = QtWidgets.QGroupBox("Inputs")
+        inputs_group = QtWidgets.QGroupBox("Inputs")
         self.layout.addWidget(inputs_group)
         inputs_layout = QtWidgets.QVBoxLayout()
         inputs_group.setLayout(inputs_layout)
 
-        self.inputs = config.inputs if config else []
+        self.inputs = config.inputs.copy() if config else []
         self.inputs_table = QtWidgets.QTreeWidget()
         # set two columns for the table widget and set headers for Var name and local name
         self.inputs_table.setColumnCount(2)
@@ -178,11 +193,21 @@ class MathChannelConfigDialog(QtWidgets.QDialog):
         self.expression_input = QtWidgets.QLineEdit()
         expression_layout.addWidget(self.expression_input)
 
-        # Output Variable
+        # Window length
+        window_layout = QtWidgets.QHBoxLayout()
+        self.window_length_input = QtWidgets.QLineEdit()
+        window_layout.addWidget(QtWidgets.QLabel("Window Length (optional):"))
+        window_layout.addWidget(self.window_length_input)
+        expression_layout.addLayout(window_layout)
+        window_help_label = QtWidgets.QLabel("Set the window length for the expression (e.g. 1s, 5m, 1h)\n"
+                             "If the window length is not set, the expression will be evaluated every time step")
+        window_help_label.setStyleSheet("color: gray; font-size: 10px; font-style: italic;")
+        expression_layout.addWidget(window_help_label)
+
+            # Output Variable
         outputs_group = QtWidgets.QGroupBox("Output")
         self.layout.addWidget(outputs_group)
         outputs_layout = QtWidgets.QVBoxLayout()
-        outputs_layout.setSpacing(0)
         outputs_group.setLayout(outputs_layout)
 
         output_var_layout = QtWidgets.QHBoxLayout()
@@ -202,11 +227,14 @@ class MathChannelConfigDialog(QtWidgets.QDialog):
         output_name_layout.setSpacing(10)
         outputs_layout.addLayout(output_name_layout)
 
-        self.output_label = QtWidgets.QLabel("User Var Name:")
+        self.output_label = QtWidgets.QLabel("Custom name (optional):")
         self.output_label_input = QtWidgets.QLineEdit()
         self.output_label_input.setPlaceholderText("MyVariable")
         output_name_layout.addWidget(self.output_label)
         output_name_layout.addWidget(self.output_label_input)
+        output_name_help_label = QtWidgets.QLabel("Custom names only work for user variables, e.g. User0, User1")
+        output_name_help_label.setStyleSheet("color: gray; font-size: 10px; font-style: italic;")
+        outputs_layout.addWidget(output_name_help_label)
 
         # Buttons
         self.button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
@@ -218,10 +246,11 @@ class MathChannelConfigDialog(QtWidgets.QDialog):
         if config:
             self.name_input.setText(config.name)
             self.expression_input.setText(config.expression)
+            self.window_length_input.setText(config.window_length)
             self.output_var_name.setText(config.output_expedition_var.name)
             self.output_label_input.setText(config.output_expedition_user_name)
             # add items to the table widget (Var name in first column, local name in second column)
-            for i in config.inputs:
+            for i in self.inputs:
                 item = QtWidgets.QTreeWidgetItem([i.expedition_var.name, i.local_var_name])
                 self.inputs_table.addTopLevelItem(item)
 
@@ -241,37 +270,7 @@ class MathChannelConfigDialog(QtWidgets.QDialog):
                 item = QtWidgets.QTreeWidgetItem([iv.expedition_var.name, iv.local_var_name])
                 self.inputs_table.addTopLevelItem(item)
 
-    def get_config(self):
-        # Return a MathChannelConfig object based on user input
-        name = self.name_input.text()
-        expression = self.expression_input.text()
-        output_var = self.output_var_name.text()
-        output_label = self.output_label_input.text()
-        input_vars = self.inputs
-
-        return MathChannelConfig(
-            name=name,
-            expression=expression,
-            output_expedition_var_enum_string=output_var,
-            output_expedition_user_name=output_label,
-            inputs=input_vars,
-        )
-
-
-class RollingMathChannelConfigDialog(MathChannelConfigDialog):
-    def __init__(self, parent=None, config=None):
-        super().__init__(parent, config)
-        self.setWindowTitle("Rolling Math Channel Configuration")
-
-        # Window length
-        self.window_length_input = QtWidgets.QLineEdit()
-        self.layout.addWidget(QtWidgets.QLabel("Window Length (seconds):"))
-        self.layout.addWidget(self.window_length_input)
-
-        # Set window length if editing an existing config
-        if config:
-            self.window_length_input.setText(str(config.window_length_time_delta.total_seconds()))
-
+    # add a window length input
     def get_config(self):
         # Return a RollingMathChannelConfig object based on user input
         name = self.name_input.text()
@@ -282,8 +281,10 @@ class RollingMathChannelConfigDialog(MathChannelConfigDialog):
         output_label = self.output_label_input.text()
         input_vars = self.inputs
         window_length = self.window_length_input.text()
+        if not window_length:
+            window_length = None
 
-        return RollingMathChannelConfig(
+        return MathChannelConfig(
             name=name,
             expression=expression,
             output_expedition_var_enum_string=output_var,

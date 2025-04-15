@@ -36,6 +36,7 @@ class MathChannelConfig(BaseModel):
     expression: str
     inputs: List[InputVar]
     output_is_heading: Optional[bool] = False
+    window_length: Optional[str] = None # e.g. "1s", "5m", "1h"
 
     @field_validator('output_expedition_var_enum_string')
     @classmethod
@@ -53,27 +54,15 @@ class MathChannelConfig(BaseModel):
     def channel_type() -> str:
         return "Math Channel"
 
-
-class RollingMathChannelConfig(MathChannelConfig):
-    """
-    This class is a pydantic model that represents a rolling function channel configuration.
-    A rolling function channel is a channel that takes inputs into a rolling window to
-    be used in an expression and then output to an output variable.
-    """
-    window_length: str = "1s"  # window length string eg 1s, 1m, 1h
-
     @property
-    def window_length_time_delta(self) -> timedelta:
-        return pd.to_timedelta(self.window_length)
-
-    @staticmethod
-    def channel_type() -> str:
-        return "Rolling Math Channel"
-
+    def window_length_time_delta(self) -> Optional[timedelta]:
+        if self.window_length is None:
+            return None
+        else:
+            return pd.to_timedelta(self.window_length)
 
 class Config(BaseModel):
     expedition: ExpeditionConfig
     boat: Optional[int] = 0
     math_channels: List[MathChannelConfig]
-    rolling_math_channels: List[RollingMathChannelConfig]
 

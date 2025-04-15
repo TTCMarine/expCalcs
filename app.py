@@ -6,7 +6,7 @@ from pydantic import ValidationError
 
 import ExpCalcs
 # from Expedition import ExpeditionDLL
-from ui.dialogs import MathChannelConfigDialog, RollingMathChannelConfigDialog
+from ui.dialogs import MathChannelConfigDialog
 from dummy_client import DummyExpeditionDLL as ExpeditionDLL
 
 from typing import Optional, Dict, List
@@ -14,6 +14,8 @@ import logging
 import os
 
 DEFAULT_CONFIG_FILE = "config.json"
+
+logger = logging.getLogger(__name__)
 
 
 class Column(IntEnum):
@@ -44,6 +46,7 @@ class ExpCalcsWidget(QtWidgets.QWidget):
         self.config = None
         self.expedition = None
         self.calculators: List[ExpCalcs.MathChannelCalculator] = []
+        self.timer_step = 0.1
 
         self.layout = QtWidgets.QVBoxLayout(self)
         self.config_tree = QtWidgets.QTreeWidget()
@@ -73,9 +76,10 @@ class ExpCalcsWidget(QtWidgets.QWidget):
         self.edit_button.clicked.connect(self.on_edit_math_channel)
         self.delete_button.clicked.connect(self.on_delete_math_channel)
 
-        self.timer_10hz = QtCore.QTimer()
-        self.timer_10hz.timeout.connect(self.update_10hz)
-        self.timer_10hz.start(100)
+        self.calc_timer = QtCore.QTimer()
+        self.calc_timer.timeout.connect(self.update_10hz)
+        timer_interval = int(self.timer_step * 1000)  # convert to milliseconds
+        self.calc_timer.start(timer_interval)
 
     @QtCore.Slot()
     def on_load_default_config(self):
@@ -114,19 +118,13 @@ class ExpCalcsWidget(QtWidgets.QWidget):
             self.channel_items = {}
             self.calculators = []
 
-            math_channels_item = QtWidgets.QTreeWidgetItem(self.config_tree, ["Math Channels"])
             for math_channel in self.config.math_channels:
-                self.add_chanel_tree_item(math_channel, math_channels_item)
-                calculator = ExpCalcs.MathChannelCalculator(math_channel, self.expedition)
+                self.add_chanel_tree_item(math_channel, self.config_tree)
+                calculator = ExpCalcs.Calculator.from_config(math_channel, self.expedition, time_step=0.1)
                 self.calculators.append(calculator)
-            rolling_channels_item = QtWidgets.QTreeWidgetItem(self.config_tree, ["Rolling Channels"])
-            for rolling_channel in self.config.rolling_math_channels:
-                self.add_chanel_tree_item(rolling_channel, rolling_channels_item)
-                calculator = ExpCalcs.RollingMathChannelCalculator(rolling_channel, self.expedition)
-                self.calculators.append(calculator)
+
         else:
             QtWidgets.QMessageBox.critical(self, "Error", "No config loaded")
-
 
     def add_chanel_tree_item(self, channel, parent):
         channel_item = QtWidgets.QTreeWidgetItem(parent, [channel.name])
@@ -138,9 +136,7 @@ class ExpCalcsWidget(QtWidgets.QWidget):
 
         # attach the channel to the channel_item so we can access it later
         channel_item.setData(0, QtCore.Qt.UserRole, channel)
-
-        if isinstance(channel, ExpCalcs.RollingMathChannelConfig):
-            channel_item.setText(Column.WindowLength, channel.window_length)
+        channel_item.setText(Column.WindowLength, channel.window_length)
 
         if channel.output_expedition_user_name:
             channel_item.setText(Column.OutputLabel, channel.output_expedition_user_name)
@@ -151,6 +147,7 @@ class ExpCalcsWidget(QtWidgets.QWidget):
         for calculator in self.calculators:
             name = calculator.config.name
             result = calculator.calculate()
+
             channel_item = self.channel_items.get(name, None)
             if channel_item:
                 value_str = f"{result:.2f}"
@@ -172,56 +169,32 @@ class ExpCalcsWidget(QtWidgets.QWidget):
         selected_items = self.config_tree.selectedItems()
         if selected_items:
             selected_item = selected_items[0]
-            if selected_item.parent() is not None:
-                # get the channel from the selected item data
-                channel_config = selected_item.data(0, QtCore.Qt.UserRole)
+            # get the channel from the selected item data
+            channel_config = selected_item.data(0, QtCore.Qt.UserRole)
 
-                # check if the selected item is a math channel
-                if channel_config and channel_config.channel_type() == "Math Channel":
-                    pass
-
-                else:
-                    QtWidgets.QMessageBox.critical(self, "Error",
-                                                   f"Selected {channel_config.channel_type()} is not a math channel")
-                    return
-
-                if channel_config:
-                    # remove the config from the list
-                    self.config.math_channels.remove(channel_config)
-                    self.save()
-                    self.apply_config()
+            if channel_config:
+                # remove the config from the list
+                self.config.math_channels.remove(channel_config)
+                self.save()
+                self.apply_config()
 
     def on_edit_math_channel(self):
         selected_items = self.config_tree.selectedItems()
         if selected_items:
             selected_item = selected_items[0]
-            if selected_item.parent() is not None:
-                # get the channel from the selected item data
-                channel_config = selected_item.data(0, QtCore.Qt.UserRole)
+            # get the channel from the selected item data
+            channel_config = selected_item.data(0, QtCore.Qt.UserRole)
 
-                # check if the selected item is a math channel
-                if channel_config and channel_config.channel_type() == "Math Channel":
-                    dialog = MathChannelConfigDialog(self, channel_config)
-                    if dialog.exec() == QtWidgets.QDialog.Accepted:
-                        updated_config = dialog.get_config()
-                        # Update the config in the list
-                        index = self.config.math_channels.index(channel_config)
-                        self.config.math_channels[index] = updated_config
-                        self.save()
-                        self.apply_config()
-                elif channel_config and channel_config.channel_type() == "Rolling Math Channel":
-                    dialog = RollingMathChannelConfigDialog(self, channel_config)
-                    if dialog.exec() == QtWidgets.QDialog.Accepted:
-                        updated_config = dialog.get_config()
-                        # Update the config in the list
-                        index = self.config.rolling_math_channels.index(channel_config)
-                        self.config.rolling_math_channels[index] = updated_config
-                        self.save()
-                        self.apply_config()
-                else:
-                    QtWidgets.QMessageBox.critical(self, "Error",
-                                                   f"Selected {channel_config.channel_type()} is not a math channel")
-                    return
+            # check if the selected item is a math channel
+            if channel_config:
+                dialog = MathChannelConfigDialog(self, channel_config)
+                if dialog.exec() == QtWidgets.QDialog.Accepted:
+                    updated_config = dialog.get_config()
+                    # Update the config in the list
+                    index = self.config.math_channels.index(channel_config)
+                    self.config.math_channels[index] = updated_config
+                    self.save()
+                    self.apply_config()
 
     def save(self):
         # save the config to file

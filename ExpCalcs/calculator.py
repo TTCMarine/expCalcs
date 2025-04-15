@@ -1,8 +1,11 @@
-from .models import MathChannelConfig, RollingMathChannelConfig
+from .models import MathChannelConfig
 from typing import Dict, Optional, Union
 from Expedition import Var, ExpeditionDLL
 import numpy as np
 from abc import ABC, abstractmethod
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Calculator(ABC):
@@ -10,7 +13,7 @@ class Calculator(ABC):
                  expedition: ExpeditionDLL,
                  expression: str,
                  output_var: Var,
-                 output_var_user_name: Optional[str] = None,):
+                 output_var_user_name: Optional[str] = None, ):
         self.expedition = expedition
         self.expression = expression
         self.output_var = output_var
@@ -93,7 +96,6 @@ class Calculator(ABC):
         self.functions['signbit'] = np.signbit
         self.functions['copysign'] = np.copysign
 
-
     def add_default_variables(self):
         """
         Add the following Python variables to be used in a mathematical expression:
@@ -101,6 +103,22 @@ class Calculator(ABC):
         self.variables['pi'] = np.pi
         self.variables['e'] = np.e
 
+    @staticmethod
+    def from_config(config: MathChannelConfig,
+                    expedition: ExpeditionDLL,
+                    time_step: float = 0.1,
+                    ) -> 'Calculator':
+        """
+        Create a calculator from a MathChannelConfig
+        :param config: MathChannelConfig
+        :param expedition: ExpeditionDLL
+        :param time_step: time step for rolling calculations
+        :return: Calculator
+        """
+        if config.window_length:
+            return RollingMathChannelCalculator(config, expedition, time_step)
+        else:
+            return MathChannelCalculator(config, expedition)
 
     @abstractmethod
     def calculate(self) -> float:
@@ -118,7 +136,7 @@ class Calculator(ABC):
                 self.expedition.set_exp_var_value(self.output_var, result)
                 return result
         except Exception as e:
-            print(f"Error evaluating expression: {e}")
+            logger.warning(f"Error evaluating expression: {e}")
         return np.nan
 
 
@@ -139,10 +157,10 @@ class MathChannelCalculator(Calculator):
 
 
 class RollingMathChannelCalculator(MathChannelCalculator):
-    def __init__(self, config: RollingMathChannelConfig, expedition: ExpeditionDLL, time_step: float = 0.1):
+    def __init__(self, config: MathChannelConfig, expedition: ExpeditionDLL, time_step: float = 0.1):
         super().__init__(config, expedition)
         self.time_step = time_step
-        self.buffer_length = int(np.ceil(config.window_length_time_delta.total_seconds() / time_step))
+        self.buffer_length = max(int(np.ceil(config.window_length_time_delta.total_seconds() / time_step)), 1)
 
         self.buffers = {
             i.local_var_name: np.zeros(self.buffer_length) * np.nan

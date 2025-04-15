@@ -11,18 +11,17 @@
             "expression": "bsp * cos(radians(twa))",
             "inputs": [
                 {
-                    "expedition_var_enum_string": "Bsp",
-                    "local_var_name": "bsp"
-                },
-                {
                     "expedition_var_enum_string": "Twa",
                     "local_var_name": "twa"
+                },
+                {
+                    "expedition_var_enum_string": "Bsp",
+                    "local_var_name": "bsp"
                 }
             ],
-            "output_is_heading": false
-        }
-    ],
-    "rolling_math_channels": [
+            "output_is_heading": false,
+            "window_length": null
+        },
         {
             "name": "RollingAverageBsp",
             "output_expedition_var_enum_string": "User1",
@@ -50,6 +49,20 @@
             ],
             "output_is_heading": false,
             "window_length": "10s"
+        },
+        {
+            "name": "Foo",
+            "output_expedition_var_enum_string": "User2",
+            "output_expedition_user_name": "HdgPlus2",
+            "expression": "hdg + 5",
+            "inputs": [
+                {
+                    "expedition_var_enum_string": "Hdg",
+                    "local_var_name": "hdg"
+                }
+            ],
+            "output_is_heading": false,
+            "window_length": "1s"
         }
     ]
 }
