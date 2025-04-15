@@ -4,10 +4,16 @@ from PySide6 import QtCore, QtWidgets, QtGui
 
 from pydantic import ValidationError
 
+if sys.platform.startswith("win"):
+    from Expedition import ExpeditionDLL
+else:
+    # Dummy import for non-Windows platforms (so that I can develop on my Mac)
+    from dummy_client import DummyExpeditionDLL as ExpeditionDLL
+
 import ExpCalcs
-# from Expedition import ExpeditionDLL
 from ui.dialogs import MathChannelConfigDialog
-from dummy_client import DummyExpeditionDLL as ExpeditionDLL
+from ui.debug import DebugDialog
+from ui.about import AboutDialog
 
 from typing import Optional, Dict, List
 import logging
@@ -32,7 +38,7 @@ class ExpCalcsWidget(QtWidgets.QWidget):
     load_default_config = QtCore.Signal()
 
     COLUMN_LABELS = {
-        Column.Name: "Config",
+        Column.Name: "Name",
         Column.Inputs: "Inputs",
         Column.Expression: "Expression",
         Column.WindowLength: "Window Length",
@@ -62,19 +68,32 @@ class ExpCalcsWidget(QtWidgets.QWidget):
 
         # Add buttons for managing MathChannelConfigs
         self.button_layout = QtWidgets.QHBoxLayout()
-        self.add_button = QtWidgets.QPushButton("Add Math Channel")
-        self.edit_button = QtWidgets.QPushButton("Edit Math Channel")
-        self.delete_button = QtWidgets.QPushButton("Delete Math Channel")
+        self.add_button = QtWidgets.QPushButton("➕ Add Math Channel")
+        self.edit_button = QtWidgets.QPushButton("✏️ Edit Math Channel")
+        self.edit_button.setEnabled(False)
+        self.delete_button = QtWidgets.QPushButton("❌ Delete Math Channel")
+        self.delete_button.setEnabled(False)
+        self.debug_info_button = QtWidgets.QPushButton("🔍 Debug Info")
+        self.debug_info_button.setEnabled(False)
+
+        # enable/disable buttons based on selection
+        self.config_tree.itemSelectionChanged.connect(lambda: [
+            self.edit_button.setEnabled(bool(self.config_tree.selectedItems())),
+            self.delete_button.setEnabled(bool(self.config_tree.selectedItems())),
+            self.debug_info_button.setEnabled(bool(self.config_tree.selectedItems()))
+        ])
 
         self.button_layout.addWidget(self.add_button)
         self.button_layout.addWidget(self.edit_button)
         self.button_layout.addWidget(self.delete_button)
+        self.button_layout.addWidget(self.debug_info_button)
         self.layout.addLayout(self.button_layout)
 
         # Connect buttons to their respective slots
         self.add_button.clicked.connect(self.on_add_math_channel)
         self.edit_button.clicked.connect(self.on_edit_math_channel)
         self.delete_button.clicked.connect(self.on_delete_math_channel)
+        self.debug_info_button.clicked.connect(self.on_debug_info)
 
         self.calc_timer = QtCore.QTimer()
         self.calc_timer.timeout.connect(self.update_10hz)
@@ -196,6 +215,18 @@ class ExpCalcsWidget(QtWidgets.QWidget):
                     self.save()
                     self.apply_config()
 
+    def on_debug_info(self):
+        selected_items = self.config_tree.selectedItems()
+        if selected_items:
+            selected_item = selected_items[0]
+            # get the channel from the selected item data
+            channel_config = selected_item.data(0, QtCore.Qt.UserRole)
+            if channel_config:
+                index = self.config.math_channels.index(channel_config) # calculators are in the same order as the config
+                calculator = self.calculators[index]
+                debug_dialog = DebugDialog(calculator, self)
+                debug_dialog.exec()
+
     def save(self):
         # save the config to file
         if self.config:
@@ -216,18 +247,24 @@ class MainWindow(QtWidgets.QMainWindow):
         # set window size
         self.resize(800, 600)
 
-    @QtCore.Slot()
-    def on_copy_client_id(self):
-        client_id = ExpCalcs.get_client_id()
-        clipboard = QtWidgets.QApplication.clipboard()
-        clipboard.setText(client_id)
+        # add a top menu with help and about
+        self.menu_bar = self.menuBar()
+        self.setMenuBar(self.menu_bar)
+        self.help_menu = self.menu_bar.addMenu("Help")
+        self.about_action = QtGui.QAction("About", self)
+        self.about_action.triggered.connect(self.show_about_dialog)
+        self.help_menu.addAction(self.about_action)
 
+    def show_about_dialog(self):
+        about_dialog = AboutDialog(self)
+        about_dialog.exec()
 
 if __name__ == "__main__":
     log_level = "INFO"
     logging.basicConfig(level=log_level)
 
-    app = QtWidgets.QApplication([])
+    app = QtWidgets.QApplication(sys.argv)
+    app.setApplicationName("ExpCalcs")
     # set icon to be expcalcs.ico
     app.setWindowIcon(QtGui.QIcon("expcalcs.ico"))
 

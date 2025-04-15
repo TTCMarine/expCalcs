@@ -4,23 +4,32 @@ from Expedition import Var, ExpeditionDLL
 import numpy as np
 from abc import ABC, abstractmethod
 import logging
+from PySide6.QtCore import QObject, Signal
 
 logger = logging.getLogger(__name__)
 
 
-class Calculator(ABC):
+class Calculator(QObject):
+    evaluated = Signal(float)  # Emitted when an expression is successfully evaluated
+    error = Signal(str)  # Emitted when an error occurs during evaluation
+
     def __init__(self,
                  expedition: ExpeditionDLL,
                  expression: str,
                  output_var: Var,
-                 output_var_user_name: Optional[str] = None, ):
+                 output_var_user_name: Optional[str] = None,
+                 name: Optional[str] = None):
+        QObject.__init__(self)
+
         self.expedition = expedition
         self.expression = expression
         self.output_var = output_var
         self.output_var_user_name = output_var_user_name
+        self.name = name if name else expression
 
         self.variables = {}
         self.functions = {'__builtins__': None}
+        self._evaluation_variables = {}
 
         self.add_default_functions()
         self.add_default_variables()
@@ -130,14 +139,39 @@ class Calculator(ABC):
         :param variables: a dictionary of variable names and their values
         :return: the result of the expression
         """
+        self._evaluation_variables = variables
         try:
-            result = eval(self.expression, variables, self.functions)
+            result = eval(self.expression, self._evaluation_variables, self.functions)
             if isinstance(result, float):
                 self.expedition.set_exp_var_value(self.output_var, result)
+                self.evaluated.emit(result)
                 return result
+            elif isinstance(result, np.ndarray):
+                if result.size == 1:
+                    result = result.item()
+                    self.expedition.set_exp_var_value(self.output_var, result)
+                    self.evaluated.emit(result)
+                    return result
+                else:
+                    logger.warning(f"Expression returned an array of size {result.size}, expected a single value.")
+                    self.error.emit("Expression returned an array, expected a single value.")
         except Exception as e:
             logger.warning(f"Error evaluating expression: {e}")
+            self.error.emit(str(e))
+            # set the output variable to NaN
+
+        self.expedition.set_exp_var_value(self.output_var, np.nan)
+        self.evaluated.emit(float('nan'))
         return np.nan
+
+    @property
+    def evaluation_variables(self) -> Dict[str, Union[float, np.ndarray]]:
+        """
+        Get the evaluation variables used in the last evaluation
+        :return: a dictionary of variable names and their values
+        """
+        # return self._evaluation_variables without the builtins
+        return {k: v for k, v in self._evaluation_variables.items() if not k.startswith('__')}
 
 
 class MathChannelCalculator(Calculator):
@@ -145,7 +179,8 @@ class MathChannelCalculator(Calculator):
         super().__init__(expedition,
                          config.expression,
                          config.output_expedition_var,
-                         config.output_expedition_user_name)
+                         config.output_expedition_user_name,
+                         config.name)
         self.config = config
         self.inputs = config.inputs
 

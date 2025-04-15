@@ -1,6 +1,6 @@
 # dialogs.py
 from PySide6 import QtWidgets
-from PySide6.QtCore import Qt, QStringListModel, Signal
+from PySide6.QtCore import Qt, Signal
 
 from ExpCalcs import InputVar, MathChannelConfig
 from Expedition import Var
