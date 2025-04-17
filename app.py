@@ -253,6 +253,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.channels_menu = self.menu_bar.addMenu("Math Channels")
         self.add_channel_action = QtGui.QAction("Add Channel", self)
         self.add_channel_action.triggered.connect(self.exp_calcs.on_add_math_channel)
+        self.channels_menu.addAction(self.add_channel_action)
 
         self.help_menu = self.menu_bar.addMenu("Help")
         self.about_action = QtGui.QAction("About", self)
