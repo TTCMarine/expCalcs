@@ -250,6 +250,10 @@ class MainWindow(QtWidgets.QMainWindow):
         # add a top menu with help and about
         self.menu_bar = self.menuBar()
         self.setMenuBar(self.menu_bar)
+        self.channels_menu = self.menu_bar.addMenu("Math Channels")
+        self.add_channel_action = QtGui.QAction("Add Channel", self)
+        self.add_channel_action.triggered.connect(self.exp_calcs.on_add_math_channel)
+
         self.help_menu = self.menu_bar.addMenu("Help")
         self.about_action = QtGui.QAction("About", self)
         self.about_action.triggered.connect(self.show_about_dialog)
